@@ -14,7 +14,6 @@ char uartbuf[8];
 void interpret_senderror(int);
 
 #define HTTP_HOST "spirilis.net"
-//#define HTTP_HOST "wmmit032091.us.randomhouse.com"
 
 const char http_req1[] = { "GET / HTTP/1.0\r\nHost: spirilis.net\r\n\r\n" };
 
