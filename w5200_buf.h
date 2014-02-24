@@ -27,6 +27,7 @@ uint16_t wiznet_recvsize(int);
 void wiznet_r_rxbuf(int, uint16_t, void *, uint8_t);
 void wiznet_peek_rxbuf(int, uint16_t, uint16_t, void *);
 void wiznet_flush_rxbuf(int, uint16_t, uint8_t);
+uint16_t wiznet_search_r_rxbuf(int, uint16_t, void *, uint8_t, uint8_t);
 uint16_t wiznet_read_virtual_fsr(int);
 #define wiznet_read_virtual_tsz(sock) (W52_SOCK_MEM_SIZE - wiznet_read_virtual_fsr(sock))
 

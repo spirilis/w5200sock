@@ -38,6 +38,7 @@ const uint16_t w52_const_mac_default[3] = {0x5452, 0x0000, 0xF801};  // 54:52:00
 
 /* IRQ handler flag */
 volatile uint8_t w5200_irq;
+uint16_t w52_portoffset;
 
 /* TCP state descriptions */
 const char * wiznet_tcp_state[] = {
@@ -260,7 +261,7 @@ int wiznet_connect(int sockfd, uint16_t *addr, uint16_t dport)
 			// Source port: 40000 + an incrementing index * # of sockets plus the socket ID.  Each subsequent
 			// use of a socket will cause the source port to walk up a range, rolling over after 255 uses.
 			w52_sockets[sockfd].srcport_idx++;
-			wiznet_w_sockreg16(sockfd, W52_SOCK_SRCPORT, w52_sockets[sockfd].srcport_idx * W52_MAX_SOCKETS + sockfd + W52_TCP_SRCPORT_BASE);
+			wiznet_w_sockreg16(sockfd, W52_SOCK_SRCPORT, w52_sockets[sockfd].srcport_idx * W52_MAX_SOCKETS + sockfd + W52_TCP_SRCPORT_BASE + w52_portoffset);
 			wiznet_w_command(sockfd, W52_SOCK_CMD_OPEN);
 
 			do {
@@ -307,7 +308,7 @@ int wiznet_connect(int sockfd, uint16_t *addr, uint16_t dport)
 			// Source port: 40000 + an incrementing index * # of sockets plus the socket ID.  Each subsequent
 			// use of a socket will cause the source port to walk up a range, rolling over after 255 uses.
 			w52_sockets[sockfd].srcport_idx++;
-			wiznet_w_sockreg16(sockfd, W52_SOCK_SRCPORT, w52_sockets[sockfd].srcport_idx * W52_MAX_SOCKETS + sockfd + W52_TCP_SRCPORT_BASE);
+			wiznet_w_sockreg16(sockfd, W52_SOCK_SRCPORT, w52_sockets[sockfd].srcport_idx * W52_MAX_SOCKETS + sockfd + W52_TCP_SRCPORT_BASE + w52_portoffset);
 			wiznet_w_command(sockfd, W52_SOCK_CMD_OPEN);
 			sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
 			if (sr != W52_SOCK_SR_SOCK_UDP)
@@ -468,6 +469,45 @@ int wiznet_recv(int sockfd, void *buf, uint16_t sz, uint8_t do_recv)
 			rsz = sz;
 
 		wiznet_r_rxbuf(sockfd, rsz, buf, do_recv);  // Read contents and possibly acknowledge (do_recv determines this)
+		return rsz;
+	}
+
+	// Disconnect requested from the other end, timeout detected, or socket in process of closing?  Process.
+	if (w52_sockets[sockfd].mode == W52_SOCK_MR_PROTO_TCP) {
+		irq = wiznet_r_sockreg(sockfd, W52_SOCK_IR);
+		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT))
+			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+		sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
+		if (sr != W52_SOCK_SR_SOCK_ESTABLISHED) {
+			if (sr != W52_SOCK_SR_SOCK_LISTEN) {
+				if (w52_sockets[sockfd].is_bind)
+					wiznet_quickbind(sockfd);  // Re-bind LISTEN port so new connections can come through.
+			}
+			return -ENOTCONN;
+		}
+	}
+
+	// This signals that we should try again later; sockets are non-blocking in this library.
+	return -EAGAIN;
+}
+
+int wiznet_search_recv(int sockfd, void *buf, uint16_t sz, uint8_t searchchar, uint8_t do_recv)
+{
+	uint16_t rsz, rsr;
+	uint8_t irq, sr;
+
+	if (sockfd < 0 || sockfd >= W52_MAX_SOCKETS)
+		return -EBADF;
+
+	rsr = wiznet_recvsize(sockfd);
+	if (rsr) {
+		if (rsr < sz)
+			rsz = rsr;
+		else
+			rsz = sz;
+
+		rsz = wiznet_search_r_rxbuf(sockfd, rsz, buf, searchchar, do_recv);  // Read contents up to 'searchchar' or rsz
+                                                                             // and possibly acknowledge (do_recv determines this)
 		return rsz;
 	}
 
@@ -788,47 +828,48 @@ int wiznet_mac_sendto(void *buf, uint16_t sz, uint16_t *dstmac, uint16_t framety
 
 int wiznet_init()
 {
-        uint16_t i, ipzero[2];
+	uint16_t i, ipzero[2];
 
 	wiznet_io_init();
 
-        // Perform device reset
-        __delay_cycles(50);  // Assuming 25MHz MCLK; slower clock speeds will just produce longer delays, which is OK.
+	// Perform device reset
+	__delay_cycles(100);  // Assuming 25MHz MCLK; slower clock speeds will just produce longer delays, which is OK.
 	w5200_irq = 0x00;
-        W52_RESET_PORTOUT |= W52_RESET_PORTBIT;
-        __delay_cycles(4000000);
+	w52_portoffset = 0;
+	W52_RESET_PORTOUT |= W52_RESET_PORTBIT;
+	__delay_cycles(4000000);
         
-        i = wiznet_r_reg(W52_VERSIONR);
-        if (!i)
-                return -EFAULT;  // Init failed; can't ascertain chip version, possibly SPI fault?
+	i = wiznet_r_reg(W52_VERSIONR);
+	if (!i)
+		return -EFAULT;  // Init failed; can't ascertain chip version, possibly SPI fault?
 
-        wiznet_w_reg(W52_MR, 0x80);
-        while (wiznet_r_reg(W52_MR) & 0x80)
-                __delay_cycles(10000);
+	wiznet_w_reg(W52_MR, 0x80);
+	while (wiznet_r_reg(W52_MR) & 0x80)
+		__delay_cycles(10000);
 
-        // Disable sockets from expressing IRQ on pin
-        wiznet_w_reg(W52_IMR, 0x00);
+	// Disable sockets from expressing IRQ on pin
+	wiznet_w_reg(W52_IMR, 0x00);
 
-        wiznet_w_reg(W52_MR, 0x00);  // Ping enabled
+	wiznet_w_reg(W52_MR, 0x00);  // Ping enabled
 	wiznet_ip_bin_w_reg(W52_SUBNETMASK, w52_const_subnet_classC);
-        ipzero[0] = ipzero[1] = 0x0000;
+	ipzero[0] = ipzero[1] = 0x0000;
 	wiznet_ip_bin_w_reg(W52_GATEWAY, ipzero);
 	wiznet_ip_bin_w_reg(W52_SOURCEIP,w52_const_ip_default);
 	wiznet_mac_bin_w_reg(W52_SOURCEMAC, w52_const_mac_default);
 
-        // Trusting default values for RTR and RCR (0x07D0, 0x08)
+	// Trusting default values for RTR and RCR (0x07D0, 0x08)
 
-        wiznet_w_reg(W52_PHYSTATUS, 0x00);
-        wiznet_w_reg(W52_IMR2, 0x00);  // Don't trigger IRQ for any system-wide errors e.g. IP conflict
+	wiznet_w_reg(W52_PHYSTATUS, 0x00);
+	wiznet_w_reg(W52_IMR2, 0x00);  // Don't trigger IRQ for any system-wide errors e.g. IP conflict
 
-        // Close all sockets
-        for (i=0; i < W52_MAX_SOCKETS; i++) {
-                wiznet_w_command(i, W52_SOCK_CMD_CLOSE);
-                wiznet_w_sockreg(i, W52_SOCK_MR, 0x00);
-        }
+	// Close all sockets
+	for (i=0; i < W52_MAX_SOCKETS; i++) {
+		wiznet_w_command(i, W52_SOCK_CMD_CLOSE);
+		wiznet_w_sockreg(i, W52_SOCK_MR, 0x00);
+	}
 
-        // Ready to roll
-        return 0;
+	// Ready to roll
+	return 0;
 }
 
 /* Example MSP430 Interrupt ISR for handling the WizNet IRQ line and updating w5200_irq correctly:

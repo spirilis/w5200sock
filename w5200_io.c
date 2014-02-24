@@ -160,3 +160,32 @@ void wiznet_r_buf(uint16_t addr, uint16_t len, void *buf)
         W52_CS_HIGH;
         W52_SPI_UNSET;
 }
+
+uint16_t wiznet_search_r_buf(uint16_t addr, uint16_t len, void *buf, uint8_t searchchar)
+{
+	uint8_t *bufptr = (uint8_t *)buf, keep_reading = 1;
+	uint16_t i, ttl=0;
+
+	if (!len)
+		return 0;
+	W52_SPI_SET;
+	W52_CS_LOW;
+	spi_transfer(addr >> 8);
+	spi_transfer(addr & 0xFF);
+	spi_transfer( (W52_SPI_OPCODE_READ >> 8) | (len >> 8) );
+	spi_transfer(len & 0xFF);
+	for (i=0; i < len; i++) {
+		if (keep_reading) {
+			bufptr[i] = spi_transfer(0xFF);
+			ttl++;
+			if (bufptr[i] == searchchar)
+				keep_reading = 0;
+		} else {
+			spi_transfer(0xFF);  // Drain remaining bytes (W5200 doesn't like abrupt cessation of SPI transfers)
+		}
+	}
+	W52_CS_HIGH;
+	W52_SPI_UNSET;
+
+	return ttl;
+}

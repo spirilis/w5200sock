@@ -109,7 +109,11 @@ typedef struct {
 #define DNSLIB_ERRNO_SENDTOFAULT 15
 #define DNSLIB_ERRNO_BINDFAULT 16
 
+#define DNSLIB_ERRNO_MAX 16
+
 /* Functions */
+char *dnslib_strerror(int);  // Return a const char * pointer describing the named error.
+
 int dnslib_send_qname(int sockfd, const char *dnsname, uint16_t qtype, uint16_t qclass);  // Internal
 int dnslib_recv_qname(int sockfd, char *dnsname, uint16_t maxlen);  // Internal
 int dnslib_flush_qname(int sockfd);

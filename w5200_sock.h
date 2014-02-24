@@ -41,6 +41,7 @@ int wiznet_quickbind(int);
 int wiznet_bind(int, uint16_t);
 int wiznet_accept(int);
 int wiznet_recv(int, void *, uint16_t, uint8_t);
+int wiznet_search_recv(int, void *, uint16_t, uint8_t, uint8_t);
 int wiznet_peek(int, uint16_t, void *, uint16_t);
 int wiznet_flush(int, uint16_t, uint8_t);
 int wiznet_recvfrom(int, void *, uint16_t, uint16_t *, uint16_t *, uint8_t);

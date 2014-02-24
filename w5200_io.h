@@ -36,6 +36,7 @@ void wiznet_w_set(uint16_t, uint16_t, uint8_t);
 /* Low-level Buffer I/O (belongs here, not w5200_buf.h) */
 void wiznet_w_buf(uint16_t, uint16_t, void *);
 void wiznet_r_buf(uint16_t, uint16_t, void *);
+uint16_t wiznet_search_r_buf(uint16_t, uint16_t, void *, uint8_t);
 
 
 

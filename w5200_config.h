@@ -60,6 +60,7 @@
 
 /* Base port used as source-port for outbound TCP connections */
 #define W52_TCP_SRCPORT_BASE 40000
+extern uint16_t w52_portoffset;  // User-settable offset to add to the source port.
 
 /* Method used to wait between issuing an operation and waiting for IRQ */
 #define WIZNET_CPU_WAIT LPM0

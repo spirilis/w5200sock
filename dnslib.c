@@ -27,6 +27,32 @@
 uint16_t *dnslib_resolver;  // Local DNS resolver IP
 volatile uint16_t dnslib_errno;
 
+const char *dnslib_errno_strings[] = {
+	"Receive Fault",
+	"Destination Port Fault",
+	"DNS Reply Packet Size Fault",
+	"DNS Reply Not QR",
+	"DNS Reply ID Mismatch",
+	"DNS Reply Contains No Answers",
+	"DNS Reply RCODE Fault",
+	"ARP Timeout",
+	"Invalid DNS Name",
+	"No DNS Reply Packet",
+	"DNS Reply Not A Record",
+	"DNS Reply Not INET",
+	"DNS Reply Invalid Size",
+	"DNS Reply Parser Truncated",
+	"Send Fault",
+	"Bind Fault",
+};
+
+char *dnslib_strerror(int err)
+{
+	if (err > DNSLIB_ERRNO_MAX || err < 1)
+		return (char *)"UNKNOWN";
+	return (char *)dnslib_errno_strings[err];
+}
+
 int dnslib_send_qname(int sockfd, const char *dnsname, uint16_t qtype, uint16_t qclass)
 {
 	int i=0, j, found;
