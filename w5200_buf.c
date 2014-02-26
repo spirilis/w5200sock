@@ -438,7 +438,7 @@ void wiznet_mac_bin_r_reg(uint16_t addr, uint16_t *macbin)
 {
 	macbin[0] = wiznet_r_reg16(addr);
 	macbin[1] = wiznet_r_reg16(addr+2);
-	macbin[1] = wiznet_r_reg16(addr+4);
+	macbin[2] = wiznet_r_reg16(addr+4);
 }
 
 int wiznet_mac_str_w_reg(uint16_t addr, const void *s)

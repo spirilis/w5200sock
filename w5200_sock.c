@@ -231,6 +231,8 @@ int wiznet_close(int sockfd)
 
 	// Mask any IRQs from this socket
 	wiznet_w_reg(W52_IMR, wiznet_r_reg(W52_IMR) & ~(1 << sockfd));
+	// Set socket as unused
+	w52_sockets[sockfd].mode = 0x00;
 	return 0;
 }
 
