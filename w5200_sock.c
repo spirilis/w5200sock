@@ -25,9 +25,7 @@
 #include "w5200_buf.h"
 #include "w5200_io.h"
 #include "w5200_sock.h"
-
-// temporary debugging
-#include "uartcli.h"
+#include "w5200_debug.h"
 
 /* Default IPs and utility subnets */
 const uint16_t w52_const_subnet_classA[2] = {0xFF00, 0x0000};
@@ -97,49 +95,6 @@ int wiznet_irq_getsocket()
 		return sock;
 	}
 	return -EAGAIN;  // No IRQ fired; nothing more to see here!
-}
-
-/* Debugging - Register dump
- * sockfd = 0-7 : Dump socket-specific info for socket
- * sockfd outside that range : Dump common system registers
- *
- * Returns # of bytes written to storebuf
- */
-int wiznet_debug_dumpregs(int sockfd, void *storebuf)
-{
-	uint8_t *sbuf = (uint8_t *)storebuf;
-
-	if (sockfd >= 0 && sockfd <= 7) {
-		sbuf[0] = wiznet_r_sockreg(sockfd, W52_SOCK_MR);
-		sbuf[1] = wiznet_r_sockreg(sockfd, W52_SOCK_IR);
-		sbuf[2] = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
-		sbuf[3] = 0x00;  // Stuffer to ensure the 16-bit values are even-aligned
-		*((uint16_t *)(sbuf+4)) = wiznet_r_sockreg16(sockfd, W52_SOCK_SRCPORT);
-		*((uint16_t *)(sbuf+6)) = wiznet_r_sockreg16(sockfd, W52_SOCK_DIPR0);
-		*((uint16_t *)(sbuf+8)) = wiznet_r_sockreg16(sockfd, W52_SOCK_DIPR2);
-		*((uint16_t *)(sbuf+10)) = wiznet_r_sockreg16(sockfd, W52_SOCK_DESTPORT);
-		*((uint16_t *)(sbuf+12)) = wiznet_r_sockreg16(sockfd, W52_SOCK_MSS);
-		sbuf[14] = wiznet_r_sockreg(sockfd, W52_SOCK_TOS);
-		sbuf[15] = wiznet_r_sockreg(sockfd, W52_SOCK_TTL);
-		*((uint16_t *)(sbuf+16)) = wiznet_r_sockreg16(sockfd, W52_SOCK_TXFREE_SIZE);
-		*((uint16_t *)(sbuf+18)) = wiznet_r_sockreg16(sockfd, W52_SOCK_TX_READPTR);
-		*((uint16_t *)(sbuf+20)) = wiznet_r_sockreg16(sockfd, W52_SOCK_TX_WRITEPTR);
-		*((uint16_t *)(sbuf+22)) = wiznet_r_sockreg16(sockfd, W52_SOCK_RX_RECVSIZE);
-		*((uint16_t *)(sbuf+24)) = wiznet_r_sockreg16(sockfd, W52_SOCK_RX_READPTR);
-		*((uint16_t *)(sbuf+26)) = wiznet_r_sockreg16(sockfd, W52_SOCK_RX_WRITEPTR);
-		sbuf[28] = wiznet_r_sockreg(sockfd, W52_SOCK_IMR);
-		return 29;
-	} else {
-		sbuf[0] = wiznet_r_reg(W52_MR);
-		sbuf[1] = wiznet_r_reg(W52_IR);
-		sbuf[2] = wiznet_r_reg(W52_IMR);
-		sbuf[3] = wiznet_r_reg(W52_RCR);
-		sbuf[4] = wiznet_r_reg(W52_VERSIONR);
-		sbuf[5] = wiznet_r_reg(W52_IR2);
-		sbuf[6] = wiznet_r_reg(W52_PHYSTATUS);
-		sbuf[7] = wiznet_r_reg(W52_IMR2);
-		return 8;
-	}
 }
 
 int wiznet_phystate()

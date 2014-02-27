@@ -22,7 +22,6 @@
 void wiznet_w_txbuf(int, uint16_t, void *);
 void wiznet_fill_txbuf(int, uint16_t, uint8_t);
 
-#define wiznet_size_rxbuf(sock) wiznet_r_reg16(W52_SOCK_REG_RESOLVE(sock, W52_SOCK_RX_RECVSIZE))
 uint16_t wiznet_recvsize(int);
 void wiznet_r_rxbuf(int, uint16_t, void *, uint8_t);
 void wiznet_peek_rxbuf(int, uint16_t, uint16_t, void *);

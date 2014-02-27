@@ -30,7 +30,6 @@ extern const uint8_t wiznet_tcp_state_idx[10];
 
 /* Functions */
 int wiznet_irq_getsocket();
-int wiznet_debug_dumpregs(int, void *);
 #define wiznet_w_command(sock, cmdval) wiznet_w_sockreg(sock, W52_SOCK_CR, cmdval)
 int wiznet_phystate();
 

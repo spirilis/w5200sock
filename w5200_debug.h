@@ -1,9 +1,12 @@
-/* uartdbg.h
+/* 
  * WizNet W5200 Ethernet Controller Driver for MSP430
  * UARTCLI-library based register dump
  *
  *
- * Copyright (c) 2013, Eric Brundick <spirilis@linux.com>
+ * Parts derived from Kevin Timmerman's tiny printf from 43oh.com
+ * Link: http://forum.43oh.com/topic/1289-tiny-printf-c-version/
+ *
+ * Copyright (c) 2014, Eric Brundick <spirilis@linux.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any purpose
  * with or without fee is hereby granted, provided that the above copyright notice
@@ -17,15 +20,42 @@
  * ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef UARTDBG_H
-#define UARTDBG_H
+#ifndef W5200_DEBUG_H
+#define W5200_DEBUG_H
 
 #include <msp430.h>
 #include <stdint.h>
 #include "w5200_config.h"
 #include "w5200_io.h"
 
-// Dump main registers & socket-specific registers for specified socket.
-void wiznet_debug_uart(int sockfd);
+
+#define WIZNET_DEBUG 1
+
+void wiznet_debug_init();
+void wiznet_debug_printf(char *format, ...);
+void wiznet_debug_dumpregs_main();
+void wiznet_debug_dumpregs_sock(int);
+
+void wiznet_debug_putc(unsigned int);
+void wiznet_debug_puts(const char *);
+
+#if WIZNET_DEBUG > 0
+#define wiznet_debug1_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug1_printf(...) ;
+#endif
+
+#if WIZNET_DEBUG > 1
+#define wiznet_debug2_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug2_printf(...) ;
+#endif
+
+#if WIZNET_DEBUG > 2
+#define wiznet_debug3_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug3_printf(...) ;
+#endif
+
 
 #endif
