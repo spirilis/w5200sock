@@ -1,19 +1,18 @@
 #include <msp430.h>
 #include "clockinit.h"
 
-#include "uartcli.h"
-#include "uartdbg.h"
 #include "sprintf.h"
 #include <stdint.h>
+#include <string.h>
 #include "w5200_config.h"
 #include "w5200_buf.h"
 #include "w5200_sock.h"
+#include "w5200_debug.h"
 
 /* TODO: Port the temperature sensor reading code to the F5xxx series! */
 
 // Using our new ip2binary routines for this...
 volatile int res1, res2;
-char uartbuf[8];
 
 int adc_temp_read();
 
@@ -24,10 +23,10 @@ int main() {
 	uint8_t netbuf[32], tempFstr[8];
 
 	WDTCTL = WDTPW | WDTHOLD;
-        ucs_clockinit(16000000, 1, 0);
-        __delay_cycles(160000);
+	ucs_clockinit(16000000, 1, 0);
+	__delay_cycles(160000);
 
-	uartcli_begin(uartbuf, 8);
+	wiznet_debug_init();
 	wiznet_init();
 
 	while (wiznet_phystate() < 0)
@@ -40,7 +39,7 @@ int main() {
 	sockfd = wiznet_socket(IPPROTO_TCP);
 	if (sockfd < 0)
 		LPM4;
-	uartcli_print_str("wiznet_socket(): "); uartcli_println_int(sockfd);
+	wiznet_debug_printf("wiznet_socket(): %d\n", sockfd);
 
 	res1 = wiznet_bind(sockfd, 80);  // Bind port 80
 	if (res1 < 0)
@@ -49,13 +48,12 @@ int main() {
 	while(1) {
 		if (!sockopen) {
 			res1 = wiznet_accept(sockfd);
-			uartcli_print_str("accept; "); uartcli_println_int(res1);
+			wiznet_debug_printf("accept: %d\n", res1);
 			if (!res1 || res1 == -EISCONN)
 				sockopen = 1;
 		} else {
 			res1 = wiznet_recv(sockfd, netbuf, 32, 1);
-			uartcli_print_str("RECV: "); uartcli_println_int(res1);
-			//wiznet_debug_uart(sockfd);
+			wiznet_debug_printf("RECV: %d\n", res1);
 			switch (res1) {
 				case -ENOTCONN:
 				case -ENETDOWN:
@@ -68,15 +66,15 @@ int main() {
 						if (netbuf[i] == '\r' && netbuf[i+1] == '\n' && netbuf[i+2] == '\r' && netbuf[i+3] == '\n') {
 							// Request submitted by client; server sends reply
 							tempF = adc_temp_read();
-							i = s_printf(tempFstr, "%d F", tempF);
+							i = s_printf((char *)tempFstr, "%d F", tempF);
 
-							strcpy(netbuf, "HTTP/1.1 200 OK\r\n");
-							wiznet_send(sockfd, netbuf, strlen(netbuf), 0);
-							strcpy(netbuf, "Content-Type: text/plain\r\n");
-							wiznet_send(sockfd, netbuf, strlen(netbuf), 0);
-							s_printf(netbuf, "Content-Length: %d\r\n\r\n", i);
-							wiznet_send(sockfd, netbuf, strlen(netbuf), 0);
-							if (wiznet_send(sockfd, tempFstr, strlen(tempFstr), 1) < 0) {
+							strcpy((char *)netbuf, "HTTP/1.1 200 OK\r\n");
+							wiznet_send(sockfd, netbuf, strlen((char *)netbuf), 0);
+							strcpy((char *)netbuf, "Content-Type: text/plain\r\n");
+							wiznet_send(sockfd, netbuf, strlen((char *)netbuf), 0);
+							s_printf((char *)netbuf, "Content-Length: %d\r\n\r\n", i);
+							wiznet_send(sockfd, netbuf, strlen((char *)netbuf), 0);
+							if (wiznet_send(sockfd, tempFstr, strlen((char *)tempFstr), 1) < 0) {
 								sockopen = 0;
 							}
 							wiznet_quickbind(sockfd);  // Close client connection & re-establish port 80 binding
@@ -85,9 +83,9 @@ int main() {
 			}
 		}
 		if (wiznet_irq_getsocket() == -EAGAIN && !wiznet_recvsize(sockfd)) {  // No IRQs pending
-			uartcli_println_str("LPM0;");
+			wiznet_debug_printf("LPM0;\n");
 			LPM0;
-			uartcli_println_str("wake;");
+			wiznet_debug_printf("wake;\n");
 		}
 	}
 

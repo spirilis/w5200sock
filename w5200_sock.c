@@ -309,6 +309,9 @@ int wiznet_quickbind(int sockfd)
 	if (sr != W52_SOCK_SR_SOCK_LISTEN)
 		return -EFAULT;
 
+	w52_sockets[sockfd].tx_wr = wiznet_r_sockreg16(sockfd, W52_SOCK_TX_WRITEPTR);
+	w52_sockets[sockfd].rx_rd = wiznet_r_sockreg16(sockfd, W52_SOCK_RX_READPTR);
+
 	return 0;
 }
 
@@ -432,8 +435,10 @@ int wiznet_recv(int sockfd, void *buf, uint16_t sz, uint8_t do_recv)
 	// Disconnect requested from the other end, timeout detected, or socket in process of closing?  Process.
 	if (w52_sockets[sockfd].mode == W52_SOCK_MR_PROTO_TCP) {
 		irq = wiznet_r_sockreg(sockfd, W52_SOCK_IR);
-		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT))
+		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT)) {
 			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
+		}
 		sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
 		if (sr != W52_SOCK_SR_SOCK_ESTABLISHED) {
 			if (sr != W52_SOCK_SR_SOCK_LISTEN) {
@@ -471,8 +476,10 @@ int wiznet_search_recv(int sockfd, void *buf, uint16_t sz, uint8_t searchchar, u
 	// Disconnect requested from the other end, timeout detected, or socket in process of closing?  Process.
 	if (w52_sockets[sockfd].mode == W52_SOCK_MR_PROTO_TCP) {
 		irq = wiznet_r_sockreg(sockfd, W52_SOCK_IR);
-		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT))
+		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT)) {
 			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
+		}
 		sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
 		if (sr != W52_SOCK_SR_SOCK_ESTABLISHED) {
 			if (sr != W52_SOCK_SR_SOCK_LISTEN) {
@@ -512,8 +519,10 @@ int wiznet_peek(int sockfd, uint16_t offset, void *buf, uint16_t sz)
 
 	// Disconnect requested from the other end, timeout detected, or socket in process of closing?  Process.
 	if (w52_sockets[sockfd].mode == W52_SOCK_MR_PROTO_TCP) {
-		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT))
+		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT)) {
 			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
+		}
 		sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
 		if (sr != W52_SOCK_SR_SOCK_ESTABLISHED) {
 			if (sr != W52_SOCK_SR_SOCK_LISTEN) {
@@ -550,8 +559,10 @@ int wiznet_flush(int sockfd, uint16_t sz, uint8_t do_recv)
 	// Disconnect requested from the other end, timeout detected, or socket in process of closing?  Process.
 	if (w52_sockets[sockfd].mode == W52_SOCK_MR_PROTO_TCP) {
 		irq = wiznet_r_sockreg(sockfd, W52_SOCK_IR);
-		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT))
+		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT)) {
 			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
+		}
 		sr = wiznet_r_sockreg(sockfd, W52_SOCK_SR);
 		if (sr != W52_SOCK_SR_SOCK_ESTABLISHED) {
 			if (sr != W52_SOCK_SR_SOCK_LISTEN) {
@@ -676,8 +687,8 @@ int wiznet_txcommit(int sockfd)
 		}
 
 		if (irq & (W52_SOCK_IR_DISCON | W52_SOCK_IR_TIMEOUT)) {
-			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
 			wiznet_w_command(sockfd, W52_SOCK_CMD_DISCON);
+			wiznet_w_sockreg(sockfd, W52_SOCK_IR, irq);
 			if (w52_sockets[sockfd].is_bind)
 				wiznet_quickbind(sockfd);
 			return (irq & W52_SOCK_IR_DISCON ? -ECONNABORTED : -ETIMEDOUT);

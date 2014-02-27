@@ -116,7 +116,7 @@ int dnslib_recv_qname(int sockfd, char *dnsname, uint16_t maxlen)
 			dnsname[i] = '\0';
 			i += 2;
 			wiznet_recv(sockfd, &c, 1, 0);
-			wiznet_debug2_printf("%s: Pointer found; not reading further\n", funcname);
+			wiznet_debug3_printf("%s: Pointer found; not reading further\n", funcname);
 			return i;
 		}
 		if (!c || (i+c > maxlen)) {
@@ -156,7 +156,7 @@ int dnslib_flush_qname(int sockfd)
 		} else {  // Pointer
 			i += 2;
 			wiznet_flush(sockfd, 1, 0);
-			wiznet_debug2_printf("%s: Pointer found; reading no further\n", funcname);
+			wiznet_debug3_printf("%s: Pointer found; reading no further\n", funcname);
 			return i;  // Read no further after a pointer
 		}
 	} while (c);
@@ -215,7 +215,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 		return i;
 	}
 
-	wiznet_debug2_printf("%s: Submitting DNS A-record query for domain name (%s)\n", funcname, dnsname);
+	wiznet_debug3_printf("%s: Submitting DNS A-record query for domain name (%s)\n", funcname, dnsname);
 	if (dnslib_send_qname(sockfd, dnsname, DNSLIB_TYPE_A, DNSLIB_CLASS_IN) < 0) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_BADNAME;
@@ -255,7 +255,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 		return -EFAULT;  // Really shouldn't happen...
 	}
 
-	wiznet_debug2_printf("%s: Reply packet received from %d.%d.%d.%d:%d\n", funcname, srcip[0] >> 8, srcip[0] & 0xFF, srcip[1] >> 8, srcip[1] & 0xFF, srcport);
+	wiznet_debug3_printf("%s: Reply packet received from %d.%d.%d.%d:%d\n", funcname, srcip[0] >> 8, srcip[0] & 0xFF, srcip[1] >> 8, srcip[1] & 0xFF, srcport);
 	if (srcport != 53) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_DSTPORTFAULT;
@@ -283,7 +283,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	dns_qry.ancount = wiznet_ntohs(netbuf+6);
 	dns_qry.nscount = wiznet_ntohs(netbuf+8);
 	dns_qry.arcount = wiznet_ntohs(netbuf+10);
-	wiznet_debug2_printf("%s: DNS reply header: ID=%d, bitfields=%x, qdcount=%d, ancount=%d, nscount=%d, arcount=%d\n", funcname,
+	wiznet_debug3_printf("%s: DNS reply header: ID=%d, bitfields=%x, qdcount=%d, ancount=%d, nscount=%d, arcount=%d\n", funcname,
 		dns_qry.id, dns_qry.bitfields, dns_qry.qdcount, dns_qry.ancount, dns_qry.nscount, dns_qry.arcount);
 
 	if ( !(dns_qry.bitfields & DNSLIB_PKTHEADER_BITFIELD_QR) ) {
@@ -394,7 +394,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	}
 	ip[0] = wiznet_ntohs(netbuf);
 	ip[1] = wiznet_ntohs(netbuf+2);
-	wiznet_debug2_printf("%s: DNS A record received, IP = %d.%d.%d.%d\n", funcname, ip[0] >> 8, ip[0] & 0xFF, ip[1] >> 8, ip[1] & 0xFF);
+	wiznet_debug3_printf("%s: DNS A record received, IP = %d.%d.%d.%d\n", funcname, ip[0] >> 8, ip[0] & 0xFF, ip[1] >> 8, ip[1] & 0xFF);
 
 	wiznet_close(sockfd);
 	return 0;

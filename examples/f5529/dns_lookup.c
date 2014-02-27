@@ -1,18 +1,17 @@
 #include <msp430.h>
 #include "clockinit.h"
 
-#include "uartcli.h"
 #include "dnslib.h"
 #include <stdint.h>
 #include "w5200_config.h"
 #include "w5200_buf.h"
 #include "w5200_sock.h"
+#include "w5200_debug.h"
 
 // Using our new ip2binary routines for this...
 //const uint16_t myip[] = { 0x0A68, 0x73B4 };  // 10.104.115.180
 //const uint16_t myip[] = { 0xC0A8, 0x00E6 };  // 192.168.0.230
 volatile int res1;
-char uartbuf[8];
 
 int main() {
 	uint8_t netbuf[32];
@@ -22,8 +21,8 @@ int main() {
         ucs_clockinit(16000000, 1, 0);
         __delay_cycles(160000);
 
-	uartcli_begin(uartbuf, 8);
-	uartcli_println_str("W5200 DNS Lookup Init:");
+	wiznet_debug_init();
+	wiznet_debug_printf("W5200 DNS Lookup Init:\n");
 	wiznet_init();
 
 	while (wiznet_phystate() < 0)
@@ -36,30 +35,23 @@ int main() {
 	//wiznet_ip2binary("67.215.241.219", dns);
 	dnslib_resolver = dns;
 
-	uartcli_print_str("dnslib_gethostbyname(\"spirilis.net\"): ");
+	wiznet_debug_printf("dnslib_gethostbyname(\"spirilis.net\"): ");
 	res1 = dnslib_gethostbyname("spirilis.net", myip);
 	if (res1 < 0) {
 		switch (res1) {
 			case -EFAULT:
-				uartcli_print_str("EFAULT; dnslib_errno = ");
-				uartcli_println_int(dnslib_errno);
+				wiznet_debug_printf("EFAULT; dnslib_errno = %s\n", dnslib_strerror(dnslib_errno));
 				break;
 			case -ETIMEDOUT:
-				uartcli_print_str("ETIMEDOUT; dnslib_errno = ");
-				uartcli_println_int(dnslib_errno);
+				wiznet_debug_printf("ETIMEDOUT; dnslib_errno = %s\n", dnslib_strerror(dnslib_errno));
 				break;
 			default:
-				uartcli_print_str("ERROR returned: ");
-				uartcli_print_int(res1);
-				uartcli_print_str(", dnslib_errno = ");
-				uartcli_println_int(dnslib_errno);
+				wiznet_debug_printf("ERROR returned: %d, dnslib_errno = %s\n", res1, dnslib_strerror(dnslib_errno));
 		}
 	} else {
-		uartcli_print_str("Success: ");
 		wiznet_binary2ip(myip, netbuf);
-		uartcli_println_str(netbuf);
+		wiznet_debug_printf("Success: %s\n", netbuf);
 	}
-	//w5200_debug_uart(7);
 
 	LPM4;
 	return 0;

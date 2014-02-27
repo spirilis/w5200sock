@@ -13,8 +13,8 @@ int main() {
 	volatile int res1, res2;
 
 	WDTCTL = WDTPW | WDTHOLD;
-        ucs_clockinit(16000000, 1, 0);
-        __delay_cycles(160000);
+	ucs_clockinit(16000000, 1, 0);
+	__delay_cycles(160000);
 
 	wiznet_init();
 

@@ -3,16 +3,14 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "uartcli.h"
-#include "uartdbg.h"
 #include "dnslib.h"
 #include "w5200_config.h"
 #include "w5200_buf.h"
 #include "w5200_sock.h"
+#include "w5200_debug.h"
 
 volatile int res1, res2;
-char uartbuf[8];
-void interpret_senderror(int);
+char *strerror(int);
 
 #define HTTP_HOST "spirilis.net"
 
@@ -27,8 +25,7 @@ int main() {
         ucs_clockinit(16000000, 1, 0);
         __delay_cycles(160000);
 
-	uartcli_begin(uartbuf, 8);
-	uartcli_println_str("Init-");
+	wiznet_debug_init();
 	wiznet_init();
 
 	while (wiznet_phystate() < 0)
@@ -43,33 +40,41 @@ int main() {
 	sockfd = wiznet_socket(IPPROTO_TCP);
 	if (sockfd < 0)
 		LPM4;
-	uartcli_print_str("wiznet_socket(): "); uartcli_println_int(sockfd);
+	wiznet_debug_printf("wiznet_socket(): %d\n", sockfd);
 
 	if (dnslib_gethostbyname(HTTP_HOST, myip) < 0) {
-		uartcli_println_str("dnslib_gethostbyname failed");
+		wiznet_debug_printf("dnslib_gethostbyname failed: %s\n", dnslib_strerror(dnslib_errno));
 		LPM4;
 	}
 
 	wiznet_binary2ip(myip, netbuf);
-	uartcli_print_str("connect("); uartcli_print_str(netbuf); uartcli_println_str("):");
+	wiznet_debug_printf("connect(%s):\n", netbuf);
 	res1 = wiznet_connect(sockfd, myip, 80);  // Bind port 80
 	if (res1 < 0) {
-		uartcli_print_str("wiznet_connect failed: "); uartcli_println_int(res1);
-		wiznet_debug_uart(sockfd);
+		wiznet_debug_printf("wiznet_connect failed: %s\n", strerror(res1));
+		wiznet_debug_dumpregs_sock(sockfd);
 		LPM4;
 	}
 
-	uartcli_print_str("send: "); uartcli_println_str(http_req1);
+	wiznet_debug_printf("sending: %s\n", http_req1);
 	res1 = wiznet_send(sockfd, (char*)http_req1, strlen(http_req1), 1);
-	if (res1 < 0) { interpret_senderror(res1); wiznet_debug_uart(sockfd); LPM4; }
+	if (res1 < 0) {
+		wiznet_debug_printf("%s\n", strerror(res1));
+		wiznet_debug_dumpregs_sock(sockfd);
+		LPM4;
+	}
 
-	uartcli_println_str("recv loop:");
+	wiznet_debug_printf("recv loop:\n");
 	while(1) {
 		while ( (res1 = wiznet_recv(sockfd, netbuf, 127, 1)) > 0 ) {
 			netbuf[res1] = 0;
-			uartcli_print_str(netbuf);
+			wiznet_debug_printf("%s", netbuf);
 		}
-		if (res1 != -EAGAIN) { uartcli_print_str("recv error: "); interpret_senderror(res1); wiznet_debug_uart(sockfd); LPM4; }
+		if (res1 != -EAGAIN) {
+			wiznet_debug_printf("recv error: %s", strerror(res1));
+			wiznet_debug_dumpregs_sock(sockfd);
+			LPM4;
+		}
 
 		if (wiznet_irq_getsocket() == -EAGAIN && !wiznet_recvsize(sockfd))
 			LPM0;  // recv = -EAGAIN means we wait for more.
@@ -78,32 +83,34 @@ int main() {
 	return 0;
 }
 
-void interpret_senderror(int errno)
+char *strerror(int errno)
 {
 	switch (errno) {
 		case -EBADF:
-			uartcli_println_str("Bad file descriptor");
+			return (char *)"Bad file descriptor";
 			break;
 		case -ENETDOWN:
-			uartcli_println_str("Network disconnected");
+			return (char *)"Network disconnected";
 			break;
 		case -ENOTCONN:
-			uartcli_println_str("Not connected");
+			return (char *)"Not connected";
 			break;
 		case -ENFILE:
-			uartcli_println_str("Request too big for socket buffer");
+			return (char *)"Request too big for socket buffer";
 			break;
 		case -ETIMEDOUT:
-			uartcli_println_str("Connection timed out");
+			return (char *)"Connection timed out";
 			break;
 		case -ECONNABORTED:
-			uartcli_println_str("Connection closed by remote host");
+			return (char *)"Connection closed by remote host";
 			break;
 		case -EPROTONOSUPPORT:
-			uartcli_println_str("Protocol not supported");
+			return (char *)"Protocol not supported";
 			break;
 	}
+	return (char *)"UNKNOWN";
 }
+
 
 #pragma vector = PORT2_VECTOR
 __interrupt void P2_IRQ (void) {

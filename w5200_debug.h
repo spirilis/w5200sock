@@ -29,7 +29,7 @@
 #include "w5200_io.h"
 
 
-#define WIZNET_DEBUG 1
+#define WIZNET_DEBUG 3
 
 void wiznet_debug_init();
 void wiznet_debug_printf(char *format, ...);
