@@ -1,0 +1,132 @@
+.\" Process this file with:
+.\" groff -mandoc -Tascii w5200sock.man
+.PD 1
+.TH W5200SOCK 2 "FEBRUARY 2014" "spirilis @ 43oh" "MSP430 Libraries"
+.SH NAME
+w5200sock \- Suite of libraries implementing BSD sockets-like API for WizNet W5200
+.SH SYNOPSIS
+Include files which provide access to the library's API-
+.PD 0
+.P
+.B #include \&"w5200_config.h\&"
+.P
+.B #include \&"w5200_buf.h\&"
+.P
+.B #include \&"w5200_sock.h\&"
+.P
+.B #include \&"w5200_debug.h\&"
+.PD 1
+.P
+.SH DESCRIPTION
+The
+.B w5200sock
+library provides a multi-layer API for developing firmware that is Internet-aware by way of the WizNet W5200
+SPI Ethernet Controller.  This API is founded on SPI primitives provided by the #include file
+.I \&"msp430_spi.h\&"
+which may be implemented in any manner the user sees fit; an example utilizing the USCI peripheral on multiple
+MSP430 models has been provided.
+.P
+The API is subdivided into layers, with the topmost "socket" layer having common functions for configuring all
+types of connections (TCP, UDP, IPRAW, MACRAW) and some divergent functions targeted to certain protocols.
+A manifest of API categories follows:
+.P
+.\" ### W5200_SOCK API
+.SS w5200_sock
+The
+.B w5200_sock
+API comprises the high-level sockets layer used to produce Internet-aware firmware on the microcontroller.
+It supports TCP (client & server), UDP (send or receive), IPRAW and MACRAW protocols and modes.
+The IPRAW and MACRAW protocol types implement open-ended access to the IP and Ethernet communication subsystems
+so the user may implement protocols not currently implemented by the WizNet chipset.  Most users will utilize
+the TCP and UDP protocols for their work.
+.\" ### W5200_BUF API
+.SS w5200_buf
+The 
+.B w5200_buf
+API is comprised of two categories:
+.IP "Buffer Handling"
+Manages RX and TX buffers for each socket in an abstract manner, handling all details of the WizNet's ring-buffer
+paradigm and managing pointers signifying the state of these buffers.  Most users should not have to touch these
+functions; they are used internally by the socket layer functions.
+.IP "IP/MAC Address Handling"
+This contains a suite of functions usable by the user and sockets layer alike which provide translation between
+a binary format--defined as an array of 2 unsigned 16-bit integers for IP addresses and 3 unsigned 16-bit integers
+for MAC addresses--and various formats including ASCII string and direct register (big-endian sequential byte
+format) formats.  The user may find these functions useful when declaring static IP/MAC information in their
+firmware, or for printing IP/MAC information for debugging purposes.
+.P
+Likewise, the functions 
+.BR wiznet_htons ()
+and
+.BR wiznet_ntohs ()
+are provided by this layer, and these may be used by the user to translate 16-bit integers between Little-Endian
+(Microcontroller-native) and Big-Endian (WizNet & TCP/IP-native) formats.
+.\" ### W5200_IO API
+.SS w5200_io
+The low-level I/O functions which perform SPI communication with the WizNet controller.
+Additionally this API layer includes the
+.BR wiznet_io_init ()
+function, which is called upon by the higher-level
+.BR wiznet_init ()
+sockets-layer function and is used for initializing the I/O ports used to talk with the controller.
+Many of the I/O port details are configured within
+.B \&"w5200_config.h\&"
+which is user-configurable.
+.\" ### W5200_DEBUG API
+.SS w5200_debug
+A debugging infrastructure based around a 
+.BR printf ()-style
+function is provided which can be customized by the
+user and provides 6 levels of verbosity, depending on how deep into the API layers you need to look to determine
+the root cause of a particular issue.  Higher levels of verbosity beget notably more bloat in the firmware size.
+.P
+The user may use 
+.BR wiznet_debug_printf ()
+for their own purposes and they are encouraged to do so.
+Internally, the
+.B w5200_io
+layer has its debug statements arranged so they do not occur within the
+.B W52_SPI_SET
+and
+.B W52_SPI_UNSET
+macros, which are intended to be used by the user to adjust the SMCLK parameters to enable coexistence of
+high-performance WizNet SPI with lower-speed SPI peripherals.  By keeping debugging statements outside of these
+macros, the USCI_A peripheral may be used to implement UART-based debugging.
+See
+.BR w5200_io (2)
+for more details.
+.SH "API DOCUMENTATION"
+Specific documentation about the APIs available have been split into separate manual pages based on the API layer in question.
+.IP "\fBw5200_io\f[](2) (w5200_io.pdf)"
+Synopsis and simple descriptions of the low-level SPI I/O functions on which the rest of the library is implemented.
+Implementation details of the
+.B W52_SPI_SET
+and
+.B W52_SPI_UNSET
+macros are provided so the user can make an informed decision as to whether they're appropriate for their application.
+.IP "\fBw5200_buf\f[](2) (w5200_buf.pdf)"
+Synopsis and descriptions of the buffer-related functions, in addition to a full description of the native binary format
+used to express IP and MAC addresses, and the functions used to convert this between strings and direct register
+manipulations.
+.IP "\fBw5200_sock\f[](2) (w5200_sock.pdf)"
+Synopsis and descriptions of the BSD sockets-layer API intended for user access.  Separate sections detail the differences
+between TCP, UDP, IPRAW and MACRAW socket modes.  A description of event loops--and how to architect firmware applications
+around this API--are provided.
+.IP "\fBw5200_debug\f[](2) (w5200_debug.pdf)"
+A description of the debugging infrastructure and how to customize it is provided.  The user is encouraged to make use of
+the
+.BR wiznet_debug_printf ()
+facility for sending messages from their own firmware code.  The
+.BR printf ()
+style function is small, supports up to 32-bit signed and unsigned integers, and supports both 16-bit and 8-bit hexadecimal
+number printing.  It is based on oPossum's Tiny Printf from 43oh:
+.I http://forum.43oh.com/topic/1289-tiny-printf-c-version/
+
+.SH SOFTWARE
+This project is hosted on
+.B GitHub
+under my account:
+.B https://github.com/spirilis/w5200sock
+.SH AUTHOR
+Eric Brundick <spirilis@linux.com>
+
