@@ -255,7 +255,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 		return -EFAULT;  // Really shouldn't happen...
 	}
 
-	wiznet_debug3_printf("%s: Reply packet received from %d.%d.%d.%d:%d\n", funcname, srcip[0] >> 8, srcip[0] & 0xFF, srcip[1] >> 8, srcip[1] & 0xFF, srcport);
+	wiznet_debug3_printf("%s: Reply packet received from %u.%u.%u.%u:%u\n", funcname, srcip[0] >> 8, srcip[0] & 0xFF, srcip[1] >> 8, srcip[1] & 0xFF, srcport);
 	if (srcport != 53) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_DSTPORTFAULT;
@@ -283,7 +283,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	dns_qry.ancount = wiznet_ntohs(netbuf+6);
 	dns_qry.nscount = wiznet_ntohs(netbuf+8);
 	dns_qry.arcount = wiznet_ntohs(netbuf+10);
-	wiznet_debug3_printf("%s: DNS reply header: ID=%d, bitfields=%x, qdcount=%d, ancount=%d, nscount=%d, arcount=%d\n", funcname,
+	wiznet_debug3_printf("%s: DNS reply header: ID=%u, bitfields=%x, qdcount=%u, ancount=%u, nscount=%u, arcount=%u\n", funcname,
 		dns_qry.id, dns_qry.bitfields, dns_qry.qdcount, dns_qry.ancount, dns_qry.nscount, dns_qry.arcount);
 
 	if ( !(dns_qry.bitfields & DNSLIB_PKTHEADER_BITFIELD_QR) ) {
@@ -295,7 +295,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	if (dns_qry.id != dns_id) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_REPLYIDMISMATCH;
-		wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dnslib_errno_strings[dnslib_errno-1], dns_qry.id);
+		wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dnslib_errno_strings[dnslib_errno-1], dns_qry.id);
 		return -EFAULT;
 	}
 	dns_id++;  // Increment dns_id here so we use a different unique ID for later requests
@@ -352,7 +352,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	if (wiznet_ntohs(netbuf) != DNSLIB_TYPE_A) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_NOTARECORD;
-		wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
+		wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
 		return -EFAULT;
 	}
 	if (wiznet_recv(sockfd, netbuf, 2, 0) < 0) {  // Query class
@@ -364,7 +364,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	if (wiznet_ntohs(netbuf) != DNSLIB_CLASS_IN) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_NOTINETCLASS;
-		wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
+		wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
 		return -EFAULT;
 	}
 	if (wiznet_recv(sockfd, netbuf, 4, 0) < 0) {  // TTL (32-bit integer)
@@ -382,7 +382,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	if (wiznet_ntohs(netbuf) != 4) {
 		wiznet_close(sockfd);
 		dnslib_errno = DNSLIB_ERRNO_REPLYINVALIDSIZE;
-		wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
+		wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dnslib_errno_strings[dnslib_errno-1], wiznet_ntohs(netbuf));
 		return -EFAULT;
 	}
 
@@ -394,7 +394,7 @@ int dnslib_gethostbyname(char *dnsname, uint16_t *ip)
 	}
 	ip[0] = wiznet_ntohs(netbuf);
 	ip[1] = wiznet_ntohs(netbuf+2);
-	wiznet_debug3_printf("%s: DNS A record received, IP = %d.%d.%d.%d\n", funcname, ip[0] >> 8, ip[0] & 0xFF, ip[1] >> 8, ip[1] & 0xFF);
+	wiznet_debug3_printf("%s: DNS A record received, IP = %u.%u.%u.%u\n", funcname, ip[0] >> 8, ip[0] & 0xFF, ip[1] >> 8, ip[1] & 0xFF);
 
 	wiznet_close(sockfd);
 	return 0;

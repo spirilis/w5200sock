@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include "msp430_spi.h"
 #include "w5200_config.h"
+#include "w5200_debug.h"
 
 
 /* Register I/O primitives */
@@ -44,6 +45,10 @@ void wiznet_io_init()
 
 void wiznet_w_reg(uint16_t addr, uint8_t val)
 {
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_w_reg()";
+	#endif
+
 	W52_SPI_SET;
 	W52_CS_LOW;
 	spi_transfer(addr >> 8);
@@ -53,11 +58,16 @@ void wiznet_w_reg(uint16_t addr, uint8_t val)
 	spi_transfer(val);
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
+	wiznet_debug6_printf("%s: SPI reg write @%x [%h]\n", funcname, addr, val);
 }
 
 uint8_t wiznet_r_reg(uint16_t addr)
 {
 	uint8_t val;
+
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_r_reg()";
+	#endif
 
 	W52_SPI_SET;
 	W52_CS_LOW;
@@ -68,11 +78,16 @@ uint8_t wiznet_r_reg(uint16_t addr)
 	val = spi_transfer(0xFF);
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
+	wiznet_debug6_printf("%s: SPI reg read @%x [%h]\n", funcname, addr, val);
 	return val;
 }
 
 void wiznet_w_reg16(uint16_t addr, uint16_t val)
 {
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_w_reg16()";
+	#endif
+
 	W52_SPI_SET;
 	W52_CS_LOW;
 	spi_transfer(addr >> 8);
@@ -83,11 +98,16 @@ void wiznet_w_reg16(uint16_t addr, uint16_t val)
 	spi_transfer(val & 0xFF);
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
+	wiznet_debug6_printf("%s: SPI reg16 write @%x [%x]", funcname, addr, val);
 }
 
 uint16_t wiznet_r_reg16(uint16_t addr)
 {
 	uint16_t val;
+
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_r_reg16()";
+	#endif
 
 	W52_SPI_SET;
 	W52_CS_LOW;
@@ -99,6 +119,7 @@ uint16_t wiznet_r_reg16(uint16_t addr)
 	val |= spi_transfer(0xFF);
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
+	wiznet_debug6_printf("%s: SPI reg16 read @%x [%x]", funcname, addr, val);
 	return val;
 }
 
@@ -106,8 +127,14 @@ void wiznet_w_set(uint16_t addr, uint16_t len, uint8_t val)
 {
 	uint16_t i;
 
-	if (!len)
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_w_set()";
+	#endif
+
+	if (!len) {
+		wiznet_debug6_printf("%s: called with len=0!\n", funcname);
 		return;
+	}
 	W52_SPI_SET;
 	W52_CS_LOW;
 	spi_transfer(addr >> 8);
@@ -119,46 +146,59 @@ void wiznet_w_set(uint16_t addr, uint16_t len, uint8_t val)
 	}
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
+	wiznet_debug6_printf("%s: SPI set write [%h] %u times starting @%x\n", funcname, val, len, addr);
 }
 
 void wiznet_w_buf(uint16_t addr, uint16_t len, void *buf)
 {
-        uint8_t *bufptr = (uint8_t *)buf;
-        uint16_t i;
+	uint8_t *bufptr = (uint8_t *)buf;
+	uint16_t i;
 
-	if (!len)
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_w_buf()";
+	#endif
+
+	if (!len) {
+		wiznet_debug6_printf("%s: called with len=0!\n", funcname);
 		return;
-        W52_SPI_SET;
-        W52_CS_LOW;
-        spi_transfer(addr >> 8);
-        spi_transfer(addr & 0xFF);
-        spi_transfer( (W52_SPI_OPCODE_WRITE >> 8) | (len >> 8) );
-        spi_transfer(len & 0xFF);
-        for (i=0; i < len; i++) {
-                spi_transfer(bufptr[i]);
-        }
-        W52_CS_HIGH;
-        W52_SPI_UNSET;
+	}
+	W52_SPI_SET;
+	W52_CS_LOW;
+	spi_transfer(addr >> 8);
+	spi_transfer(addr & 0xFF);
+	spi_transfer( (W52_SPI_OPCODE_WRITE >> 8) | (len >> 8) );
+	spi_transfer(len & 0xFF);
+	for (i=0; i < len; i++) {
+		spi_transfer(bufptr[i]);
+	}
+	W52_CS_HIGH;
+	W52_SPI_UNSET;
 }
 
 void wiznet_r_buf(uint16_t addr, uint16_t len, void *buf)
 {
-        uint8_t *bufptr = (uint8_t *)buf;
-        uint16_t i;
+	uint8_t *bufptr = (uint8_t *)buf;
+	uint16_t i;
 
-	if (!len)
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_r_buf()";
+	#endif
+
+	if (!len) {
+		wiznet_debug6_printf("%s: called with len=0!\n", funcname);
 		return;
-        W52_SPI_SET;
-        W52_CS_LOW;
-        spi_transfer(addr >> 8);
-        spi_transfer(addr & 0xFF);
-        spi_transfer( (W52_SPI_OPCODE_READ >> 8) | (len >> 8) );
-        spi_transfer(len & 0xFF);
-        for (i=0; i < len; i++) {
-                bufptr[i] = spi_transfer(0xFF);
-        }
-        W52_CS_HIGH;
-        W52_SPI_UNSET;
+	}
+	W52_SPI_SET;
+	W52_CS_LOW;
+	spi_transfer(addr >> 8);
+	spi_transfer(addr & 0xFF);
+	spi_transfer( (W52_SPI_OPCODE_READ >> 8) | (len >> 8) );
+	spi_transfer(len & 0xFF);
+	for (i=0; i < len; i++) {
+		bufptr[i] = spi_transfer(0xFF);
+	}
+	W52_CS_HIGH;
+	W52_SPI_UNSET;
 }
 
 uint16_t wiznet_search_r_buf(uint16_t addr, uint16_t len, void *buf, uint8_t searchchar)
@@ -166,8 +206,14 @@ uint16_t wiznet_search_r_buf(uint16_t addr, uint16_t len, void *buf, uint8_t sea
 	uint8_t *bufptr = (uint8_t *)buf, keep_reading = 1;
 	uint16_t i, ttl=0;
 
-	if (!len)
+	#if WIZNET_DEBUG > 5
+	const char *funcname = "wiznet_w_set()";
+	#endif
+
+	if (!len) {
+		wiznet_debug6_printf("%s: called with len=0!\n", funcname);
 		return 0;
+	}
 	W52_SPI_SET;
 	W52_CS_LOW;
 	spi_transfer(addr >> 8);
@@ -187,5 +233,9 @@ uint16_t wiznet_search_r_buf(uint16_t addr, uint16_t len, void *buf, uint8_t sea
 	W52_CS_HIGH;
 	W52_SPI_UNSET;
 
+	#if WIZNET_DEBUG > 5
+	if (ttl < len)
+		wiznet_debug6_printf("%s: search character '%c' found at %u (requested %u max)\n", funcname, searchchar, ttl, len);
+	#endif
 	return ttl;
 }

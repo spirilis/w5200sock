@@ -29,6 +29,16 @@
 #include "w5200_io.h"
 
 
+/* Debug levels:
+ * 1 - Basic information from libraries
+ * 2 - Verbose error reporting from libraries
+ * 3 - Gratuitous information from libraries
+ * 4 - Verbose detail from base socket library
+ * 5 - Extraneous detail from base socket library
+ * 6 - Low-level I/O dump from SPI transfer functions
+ *
+ * Each debug level includes information from all levels below.
+ */
 #define WIZNET_DEBUG 3
 
 void wiznet_debug_init();
@@ -55,6 +65,24 @@ void wiznet_debug_puts(const char *);
 #define wiznet_debug3_printf(...) wiznet_debug_printf(__VA_ARGS__)
 #else
 #define wiznet_debug3_printf(...) ;
+#endif
+
+#if WIZNET_DEBUG > 3
+#define wiznet_debug4_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug4_printf(...) ;
+#endif
+
+#if WIZNET_DEBUG > 4
+#define wiznet_debug5_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug5_printf(...) ;
+#endif
+
+#if WIZNET_DEBUG > 5
+#define wiznet_debug6_printf(...) wiznet_debug_printf(__VA_ARGS__)
+#else
+#define wiznet_debug6_printf(...) ;
 #endif
 
 

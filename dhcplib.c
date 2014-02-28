@@ -220,7 +220,7 @@ int dhcp_read_option(int sockfd, uint8_t *option, uint8_t *len, void *buf)
 	}
 	*option = opthdr[0];
 	*len = opthdr[1];
-	wiznet_debug3_printf("%s: optcode=%d, optlen=%d\n", funcname, opthdr[0], opthdr[1]);
+	wiznet_debug3_printf("%s: optcode=%u, optlen=%u\n", funcname, opthdr[0], opthdr[1]);
 	return wiznet_recv(sockfd, (uint8_t *)buf, opthdr[1], 0);
 }
 
@@ -448,7 +448,7 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 					if (srcport != 67) {
 						dhcplib_errno = DHCP_ERRNO_DHCPOFFER_SRCPORT_INVALID;
 						exitval = -EFAULT;
-						wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dhcplib_errno_descriptions[dhcplib_errno-1], srcport);
+						wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dhcplib_errno_descriptions[dhcplib_errno-1], srcport);
 						continue;
 					}
 					// Read DHCP header
@@ -483,28 +483,28 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 									if (optlen == 4) {
 										subnetmask[0] = wiznet_ntohs(scratch);
 										subnetmask[1] = wiznet_ntohs(scratch+2);
-										wiznet_debug2_printf("%s: subnetmask: %d.%d.%d.%d\n", funcname, subnetmask[0] >> 8, subnetmask[0] & 0xFF, subnetmask[1] >> 8, subnetmask[1] & 0xFF);
+										wiznet_debug2_printf("%s: subnetmask: %u.%u.%u.%u\n", funcname, subnetmask[0] >> 8, subnetmask[0] & 0xFF, subnetmask[1] >> 8, subnetmask[1] & 0xFF);
 									}
 									break;
 								case DHCP_OPTCODE_ROUTER:
 									if (optlen == 4) {
 										giaddr[0] = wiznet_ntohs(scratch);
 										giaddr[1] = wiznet_ntohs(scratch+2);
-										wiznet_debug2_printf("%s: gateway: %d.%d.%d.%d\n", funcname, giaddr[0] >> 8, giaddr[0] & 0xFF, giaddr[1] >> 8, giaddr[1] & 0xFF);
+										wiznet_debug2_printf("%s: gateway: %u.%u.%u.%u\n", funcname, giaddr[0] >> 8, giaddr[0] & 0xFF, giaddr[1] >> 8, giaddr[1] & 0xFF);
 									}
 									break;
 								case DHCP_OPTCODE_DHCP_SERVER_IP:
 									if (optlen == 4) {
 										siaddr[0] = wiznet_ntohs(scratch);
 										siaddr[1] = wiznet_ntohs(scratch+2);
-										wiznet_debug2_printf("%s: DHCP server: %d.%d.%d.%d\n", funcname, siaddr[0] >> 8, siaddr[0] & 0xFF, siaddr[1] >> 8, siaddr[1] & 0xFF);
+										wiznet_debug2_printf("%s: DHCP server: %u.%u.%u.%u\n", funcname, siaddr[0] >> 8, siaddr[0] & 0xFF, siaddr[1] >> 8, siaddr[1] & 0xFF);
 									}
 									break;
 								case DHCP_OPTCODE_DOMAIN_SERVER:
 									if (optlen >= 4) {  // Only extract the first DNS server.
 										dns[0] = wiznet_ntohs(scratch);
 										dns[1] = wiznet_ntohs(scratch+2);
-										wiznet_debug2_printf("%s: DNS server: %d.%d.%d.%d (%d in total)\n", funcname, dns[0] >> 8, dns[0] & 0xFF, dns[1] >> 8, dns[1] & 0xFF, optlen/4);
+										wiznet_debug2_printf("%s: DNS server: %u.%u.%u.%u (%u in total)\n", funcname, dns[0] >> 8, dns[0] & 0xFF, dns[1] >> 8, dns[1] & 0xFF, optlen/4);
 									}
 							}
 						} while (optcode != DHCP_OPTCODE_END);
@@ -513,13 +513,13 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 					} else {
 						// Not a DHCPOFFER; flush packet and signal more may come, then loop around.
 						wiznet_flush(sockfd, 10000, 1);
-						wiznet_debug3_printf("%s: Packet is not DHCPOFFER; MSGTYPE=%d\n", funcname, scratch[0]);
+						wiznet_debug3_printf("%s: Packet is not DHCPOFFER; MSGTYPE=%u\n", funcname, scratch[0]);
 					}
 				}
 				break;  // If there is no data waiting, loop will just continue another round.
 
 			case 2:  // Send DHCPREQUEST (officially requesting the lease)
-				wiznet_debug2_printf("%s: Sending DHCPREQUEST to %d.%d.%d.%d requesting IP=%d.%d.%d.%d\n", funcname,
+				wiznet_debug2_printf("%s: Sending DHCPREQUEST to %u.%u.%u.%u requesting IP=%u.%u.%u.%u\n", funcname,
 					siaddr[0] >> 8, siaddr[0] & 0xFF, siaddr[1] >> 8, siaddr[1] & 0xFF,
 					yiaddr[0] >> 8, yiaddr[0] & 0xFF, yiaddr[1] >> 8, yiaddr[1] & 0xFF);
 
@@ -551,7 +551,7 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 					if (srcport != 67) {
 						dhcplib_errno = DHCP_ERRNO_DHCPACK_SRCPORT_INVALID;
 						exitval = -EFAULT;
-						wiznet_debug2_printf("%s: %s (found %d)\n", funcname, dhcplib_errno_descriptions[dhcplib_errno-1], srcport);
+						wiznet_debug2_printf("%s: %s (found %u)\n", funcname, dhcplib_errno_descriptions[dhcplib_errno-1], srcport);
 						continue;
 					}
 					// Read DHCP header
@@ -590,7 +590,7 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 										/* Using debug3 here because we're only reading the DHCP_SERVER_IP option
 										 * from DHCPACK merely to validate that we received an ACK from the correct server.
 										 */
-										wiznet_debug3_printf("%s: DHCP server: %d.%d.%d.%d\n", funcname, siaddr_ack[0] >> 8, siaddr_ack[0] & 0xFF, siaddr_ack[1] >> 8, siaddr_ack[1] & 0xFF);
+										wiznet_debug3_printf("%s: DHCP server: %u.%u.%u.%u\n", funcname, siaddr_ack[0] >> 8, siaddr_ack[0] & 0xFF, siaddr_ack[1] >> 8, siaddr_ack[1] & 0xFF);
 									}
 							}
 						} while (optcode != DHCP_OPTCODE_END);
@@ -628,7 +628,7 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 					} else {
 						// Not a DHCPACK; flush packet and signal more may come, then loop around.
 						wiznet_flush(sockfd, 10000, 1);
-						wiznet_debug3_printf("%s: Packet is not DHCPACK; MSGTYPE=%d\n", funcname, scratch[0]);
+						wiznet_debug3_printf("%s: Packet is not DHCPACK; MSGTYPE=%u\n", funcname, scratch[0]);
 					}
 				}
 				break;  // If there is no data waiting, loop will just continue another round.
@@ -638,7 +638,7 @@ int dhcp_loop_configure(uint16_t *dnsaddr)
 	}
 
 	if (loopcount >= DHCP_LOOP_COUNT_TIMEOUT) {
-		wiznet_debug3_printf("%s: Loop count %d exceeds max of %d\n", funcname, loopcount, DHCP_LOOP_COUNT_TIMEOUT);
+		wiznet_debug3_printf("%s: Loop count %u exceeds max of %u\n", funcname, loopcount, DHCP_LOOP_COUNT_TIMEOUT);
 		wiznet_debug1_printf("%s: TIMEOUT\n", funcname);
 		exitval = -ETIMEDOUT;
 	}
