@@ -1,0 +1,66 @@
+.\" Process this file with:
+.\" groff -mandoc -Tascii w5200_io.man
+.PD 1
+.TH W5200_IO 2 "FEBRUARY 2014" "spirilis @ 43oh" "MSP430 Libraries"
+.SH NAME
+w5200_io \- Low-level SPI I/O for WizNet W5200 Socket Library
+.SH SYNOPSIS
+.\" Do not hyphenate any of this; it looks confusing!
+.nh
+.PD 0
+.P
+.B #include \&<stdint.h\&>
+.P
+.B #include \&"w5200_config.h\&"
+.P
+.B #include \&"w5200_io.h\&"
+.P
+.B #include \&"w5200_debug.h\&"
+.PD 1
+.P
+.\" Ordinary register I/O functions
+.RB void\  wiznet_w_reg ( uint16_t\  address, \ uint8_t\  value);
+.P
+.RB uint8_t\  wiznet_r_reg ( uint16_t\  address);
+.P
+.RB void\  wiznet_w_reg16 ( uint16_t\  address, \ uint16_t\  value);
+.P
+.RB uint16_t\  wiznet_r_reg16 ( uint16_t\  address);
+.P
+.RB void\  wiznet_w_set ( uint16_t\  address, \ uint16_t\  length, \ uint8_t\  value);
+.P
+.\" Socket-specific register I/O function variants
+.RB void\  wiznet_w_sockreg ( uint16_t\  socket, \ uint16_t\  address, \ uint8_t\  value);
+.P
+.RB uint8_t\  wiznet_r_sockreg ( uint16_t\  socket, \ uint16_t\  address);
+.P
+.RB void\  wiznet_w_sockreg16 ( uint16_t\  socket, \ uint16_t\  address, \ uint16_t\  value);
+.P
+.RB uint16_t\  wiznet_r_sockreg16 ( uint16_t\  socket, \ uint16_t\  address);
+.P
+.RB void\  wiznet_w_sockset ( uint16_t\  socket, \ uint16_t\  address, \ uint16_t\  length, \ uint8_t\  value);
+.P
+.\" Buffer I/O
+.RB void\  wiznet_w_buf ( uint16_t\  address, \ uint16_t\  length, \ void\ \&* buffer);
+.P
+.RB void\  wiznet_r_buf ( uint16_t\  address, \ uint16_t\  length, \ void\ \&* buffer);
+.P
+.RB uint16_t\  wiznet_search_r_buf ( uint16_t\  address, \ uint16_t\  length, \ void\ \&* buffer, \ uint8_t\  search_character);
+.P
+.RB void\  wiznet_io_init ();
+.P
+.RB #define\  W52_SPI_SET\  "(user-macro set in \fBw5200_config.h\f[])"
+.P
+.RB #define\  W52_SPI_UNSET\  "(user-macro set in \fBw5200_config.h\f[])"
+
+.\" Re-enable hyphenation
+.hy
+.SH DESCRIPTION
+.SH SOFTWARE
+This project is hosted on
+.B GitHub
+under my account:
+.B https://github.com/spirilis/w5200sock
+.SH AUTHOR
+Eric Brundick <spirilis@linux.com>
+
