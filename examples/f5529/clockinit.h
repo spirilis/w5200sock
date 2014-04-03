@@ -6,6 +6,6 @@
 
 #include <stdint.h>
 
-uint8_t ucs_clockinit(unsigned long freq, uint8_t use_xt1, uint8_t vlo_as_aclk);
+uint16_t ucs_clockinit(unsigned long freq, uint16_t use_xt1, uint16_t vlo_as_aclk);
 
 #endif
