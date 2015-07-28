@@ -34,7 +34,7 @@ void wiznet_w_txbuf(int sockfd, uint16_t sz, void *buf)
 
 	tx_wr = w52_sockets[sockfd].tx_wr;
 	i = tx_wr & W52_SOCK_MEM_MASK;
-	j = W52_SOCK_MEM_MASK - i;
+	j = W52_SOCK_MEM_SIZE - i;
 	if (j < sz) {  // Writing would overflow the buffer
 		real_ptr = W52_TXMEM_BASE + W52_SOCK_MEM_SIZE * sockfd + i;
 		wiznet_w_buf(real_ptr, j, bufptr);
@@ -59,7 +59,7 @@ void wiznet_fill_txbuf(int sockfd, uint16_t sz, uint8_t val)
 
 	tx_wr = w52_sockets[sockfd].tx_wr;
 	i = tx_wr & W52_SOCK_MEM_MASK;
-	j = W52_SOCK_MEM_MASK - i;
+	j = W52_SOCK_MEM_SIZE - i;
 	if (j < sz) {  // Writing would overflow the buffer
 		real_ptr = W52_TXMEM_BASE + W52_SOCK_MEM_SIZE * sockfd + i;
 		wiznet_w_set(real_ptr, j, val);

@@ -32,14 +32,17 @@ void wiznet_debug_puts(const char *str)
 {
 	unsigned int c;
 
-	while ( (c = (unsigned int)(*str++)) != '\0' )
-		wiznet_debug_putc(c);
+	while ( (c = (unsigned int)(*str++)) != '\0' ) {
+		UCA1TXBUF = c;
+		while (UCA1STAT & UCBUSY)
+			;
+	}
 }
 
 void wiznet_debug_putc(unsigned int c)
 {
-	UCA1TXBUF = (uint8_t)c;
-	while (!(UCA1IFG & UCTXIFG))
+	UCA1TXBUF = c;
+	while (UCA1STAT & UCBUSY)
 		;
 }
 
